@@ -1,4 +1,4 @@
-package io.yard.jira
+package io.yard.module.jira
 
 import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits._
@@ -8,24 +8,23 @@ import play.api.libs.functional.syntax._
 import play.api.libs.ws.WS
 import play.api.Play.current
 
-import io.yard.core.utils.Numbers
-import io.yard.jira._
+import io.yard.utils.Numbers
 
-object JiraServices extends JiraConfig {
-  lazy val apiUrl = jira.url + "/rest/api/2"
-  lazy val apiUrlIssues = apiUrl + "/issue"
+object JiraServices {
+  lazy val apiUrl = "/rest/api/2"
+  lazy val apiUrlIssues = "/issue"
 
-  lazy val api = WS.url(jira.url + "/rest/api/2") //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))
-  lazy val apiIssues = WS.url(apiUrlIssues) //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))
+  /*lazy val api = WS.url(jira.url + "/rest/api/2") //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))
+  lazy val apiIssues = WS.url(apiUrlIssues) //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))*/
 
-  def issueUrl(key: String) = jira.url + "/browse/" + key
+  def issueUrl(key: String)(implicit config: JiraConfig) = config.url + apiUrlIssues + "/browse/" + key
 
-  def get(key: String): Future[Option[JiraIssue]] =
-    WS.url(apiUrlIssues + "/" + key)
-      .withHeaders("Authorization" -> ("Basic " + jira.authBasic))
+  def get(key: String)(implicit config: JiraConfig): Future[Option[JiraIssue]] =
+    WS.url(issueUrl(key))
+      .withHeaders("Authorization" -> ("Basic " + config.authBasic))
       .get.map(_.json.asOpt[JiraIssue])
 
-  def create(summary: String, description: String, project: String, issueType: String): Future[JsObject] = {
+  /*def create(summary: String, description: String, project: String, issueType: String): Future[JsObject] = {
     val projectLabel = if (Numbers.isAllDigits(project)) { "id" } else { "key" }
     val issueTypeLabel = if (Numbers.isAllDigits(issueType)) { "id" } else { "name" }
 
@@ -39,5 +38,5 @@ object JiraServices extends JiraConfig {
     )
 
     apiIssues.post(newIssue).map(_.json.as[JsObject])
-  }
+  }*/
 }

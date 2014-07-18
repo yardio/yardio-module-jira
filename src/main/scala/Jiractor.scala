@@ -1,21 +1,21 @@
-package io.yard.jira
+package io.yard.module.jira
 
 import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits._
 
 import akka.actor.Actor
 
-import io.yard.core.models.{ Command, OutgoingWebHook, IncomingWebHook }
+import io.yard.models.{ Message, Command }
 
-class Jiractor extends Actor with io.yard.core.utils.Answer with JiraConfig {
+class Jiractor extends Actor with io.yard.utils.Answer {
   def receive = {
-    case c: Command         ⇒ handleCommand(c)
-    case h: OutgoingWebHook ⇒ handleOutgoingWebHook(h)
-    case _                  ⇒ ()
+    case h: Message ⇒ handleMessage(h)
+    case c: Command ⇒ handleCommand(c)
+    case _          ⇒ ()
   }
 
   def handleCommand(command: Command) = {
-    command.args.headOption match {
+    /*command.args.headOption match {
       case Some("") ⇒ asyncError("/jira command must have at least one argument.")
       case Some("new") ⇒ {
         JiraServices.create(command.args(2), command.args(3), command.channel_name.toUpperCase, command.args(1)).map { r ⇒
@@ -33,14 +33,14 @@ class Jiractor extends Actor with io.yard.core.utils.Answer with JiraConfig {
         asyncOk(s"<${link}|${key}>")
       }
       case _ ⇒ asyncError("/jira command must have at least one argument.")
-    }
+    }*/
   }
 
   val jiraRegex = "([a-zA-Z]+-[0-9]+)".r
 
-  def handleOutgoingWebHook(hook: OutgoingWebHook) = {
-    Future.sequence((for {
-      jiraRegex(issueKey) ← jiraRegex findAllIn hook.content
+  def handleMessage(message: Message) = {
+    /*Future.sequence((for {
+      jiraRegex(issueKey) ← jiraRegex findAllIn message.text
     } yield issueKey).toList map {
       key ⇒ JiraServices.get(key).map { (key, _) }
     }).map { issues ⇒
@@ -52,6 +52,6 @@ class Jiractor extends Actor with io.yard.core.utils.Answer with JiraConfig {
             s"<${link}|${issue.key}> [${issue.fields.priority.name}]: ${issue.fields.summary} (by ${issue.fields.creator.displayName})"
           }
         }.mkString("\n"))
-    }
+    }*/
   }
 }

@@ -1,8 +1,8 @@
-package io.yard.jira
+package io.yard.module.jira
 
 import akka.actor.Props
 
-import io.yard.core.Api
+import io.yard.module.core.Api
 
 class JiraPlugin(application: play.api.Application) extends play.api.Plugin {
   override def onStart = {

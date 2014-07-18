@@ -1,4 +1,4 @@
-package io.yard.jira
+package io.yard.module.jira
 
 import play.api.libs.json._
 import play.api.libs.functional.syntax._

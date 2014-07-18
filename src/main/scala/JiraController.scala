@@ -1,32 +1,33 @@
-package io.yard.jira
+package io.yard.module.jira
 
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-import io.yard.core.Api
-import io.yard.core.models._
-import io.yard.jira.JiraWebhookAction._
+import io.yard.module.core.Api
+import io.yard.models._
+import io.yard.module.jira.JiraWebhookAction._
 
-object JiraController
-    extends io.yard.core.controllers.ModuleController
-    with JiraConfig {
+object JiraController extends ModuleController with io.yard.utils.Log {
 
   lazy val logger = initLogger("yardio.modules.jira.controller")
 
   def hasRoute(rh: RequestHeader) = true
 
-  def applyRoute[RH <: RequestHeader, H >: Handler](rh: RH, default: RH ⇒ H) =
+  def applyRoute[RH <: RequestHeader, H >: Handler](rh: RH, default: RH ⇒ H) = {
+    val config = JiraConfig("")
+
     (rh.method, rh.path.drop(path.length)) match {
       case ("GET", "")  ⇒ Action { Ok("JIRA plugin is currently running...") }
-      case ("POST", "") ⇒ handleWebhook
+      case ("POST", "") ⇒ handleWebhook(config)
       case _            ⇒ default(rh)
     }
+  }
 
-  def handleWebhook = Action(parse.json) { implicit request ⇒
+  def handleWebhook(implicit config: JiraConfig) = Action(parse.json) { implicit request ⇒
 
-    request.body.validate[JiraWebhookEvent].fold(
+    /*request.body.validate[JiraWebhookEvent].fold(
       errors ⇒ {
         debug(Json.prettyPrint(request.body))
         debug(errors)
@@ -34,10 +35,10 @@ object JiraController
       event ⇒ {
         debug(Json.prettyPrint(Json.toJson(event)))
         val action = event.webhookEvent
-        val team = request.getQueryString("team") map { Api.teams.from(_) } getOrElse Api.teams.default
-        val username = request.getQueryString("username") orElse jira.bot.name
+        val team = request.getQueryString("orga") map { Api.organizations.from(_) } getOrElse Api.organizations.default
+        val username = request.getQueryString("username") orElse config.bot.name
         val channel = request.getQueryString("channel").map("#" + _)
-        val iconUrl = request.getQueryString("iconUrl") orElse jira.bot.icon
+        val iconUrl = request.getQueryString("iconUrl") orElse config.bot.icon
 
         val issue = event.issue
         val fields = issue.fields
@@ -52,9 +53,9 @@ object JiraController
 
         val attachmentIssueSummary = IncomingWebHookAttachmentField("Summary", fields.summary)
         val defaultColor =
-          if (event.created) { jira.colors.issue.created }
-          else if (event.deleted) { jira.colors.issue.deleted }
-          else jira.colors.issue.updated
+          if (event.created) { config.colors.created }
+          else if (event.deleted) { config.colors.deleted }
+          else config.colors.updated
 
         val defaultAttachment = IncomingWebHookAttachment(
           s"Created by ${fields.creator.displayName}. Summary: ${fields.summary}",
@@ -72,13 +73,13 @@ object JiraController
         } else if (event.deleted) {
           message = s"[${fields.priority.name}] ${issueType} <${issueLink}|${issueName}> has been deleted by ${updatedBy}."
           attachmentsBuffer += defaultAttachment
-        } else if (event.worklogUpdated && jira.worklog.enabled) {
+        } else if (event.worklogUpdated && config.worklog.enabled) {
           message = s"Worklog of <${issueLink}|${issueName}> has been updated by ${updatedBy}."
           attachmentsBuffer += defaultAttachment
         } else if (event.changedlog) {
           val changelog = event.changelog.get
           val validItems = changelog.items.filterNot { item ⇒
-            jira.blackList.exists(e ⇒ e.toLowerCase == item.field.toLowerCase)
+            config.blackList.exists(e ⇒ e.toLowerCase == item.field.toLowerCase)
           }
 
           if (!validItems.isEmpty) {
@@ -122,7 +123,7 @@ object JiraController
           }
 
           attachmentsBuffer += IncomingWebHookAttachment(
-            s"${fieldName}: ${comment.body}", None, None, jira.colors.comment,
+            s"${fieldName}: ${comment.body}", None, None, config.colors.commented,
             List(IncomingWebHookAttachmentField(fieldName, comment.body))
           )
         }
@@ -132,7 +133,7 @@ object JiraController
 
         IncomingWebHook(message, username, channel, iconUrl, None, attachmentsOpt).send(team)
       }
-    )
+    )*/
 
     Ok
   }
