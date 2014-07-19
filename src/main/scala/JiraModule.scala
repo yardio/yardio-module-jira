@@ -1,7 +1,6 @@
 package io.yard.module.jira
 
 import akka.actor.Props
-import akka.actor.ActorSystem
 import play.api.libs.concurrent.Akka
 
 import io.yard.common.models.Module
