@@ -1,5 +1,7 @@
 package io.yard.module.jira
 
+import play.api.libs.concurrent.Execution.Implicits._
+
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
@@ -19,9 +21,10 @@ object JiraController extends ModuleController with io.yard.common.utils.Log {
     val config = JiraConfig("")
 
     (rh.method, rh.path.drop(path.length)) match {
-      case ("GET", "")  ⇒ Action { Ok("JIRA plugin is currently running...") }
-      case ("POST", "") ⇒ handleWebhook(config)
-      case _            ⇒ default(rh)
+      case ("GET", "/debug")  ⇒ debug(rh.getQueryString("org"))
+      case ("GET", "")        ⇒ Action { Ok("JIRA plugin is currently running...") }
+      case ("POST", "")       ⇒ handleWebhook(config)
+      case _                  ⇒ default(rh)
     }
   }
 
@@ -136,5 +139,25 @@ object JiraController extends ModuleController with io.yard.common.utils.Log {
     )*/
 
     Ok
+  }
+
+  def debug(org: Option[String]) = Action.async {
+    println("ORG: " + org.map(Api.organizations.from(_)))
+    Api.connector.read[JiraConfig](JiraModule.value, org.map(Api.organizations.from(_))).map { confOpt =>
+      println("CONFIG: " + confOpt)
+      val attrs = confOpt.map { config =>
+        Map(
+          "Url" -> config.url,
+          "authBasic length" -> config.authBasic.map(_.size).toString,
+          "Bot name" -> config.bot.name,
+          "Bot icon" -> config.bot.icon,
+          "Worklog?" -> config.worklog.enabled.toString,
+          "Colors" -> config.colors.toString
+        )
+      }
+      .getOrElse(Map.empty[String, String])
+
+      Ok(io.yard.html.debug(attrs))
+    }
   }
 }
