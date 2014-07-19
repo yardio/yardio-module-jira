@@ -8,16 +8,16 @@ import play.api.libs.functional.syntax._
 import play.api.libs.ws.WS
 import play.api.Play.current
 
-import io.yard.utils.Numbers
+import io.yard.common.utils.Numbers
 
 object JiraServices {
   lazy val apiUrl = "/rest/api/2"
-  lazy val apiUrlIssues = "/issue"
+  lazy val apiUrlIssues = apiUrl + "/issue"
 
   /*lazy val api = WS.url(jira.url + "/rest/api/2") //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))
   lazy val apiIssues = WS.url(apiUrlIssues) //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))*/
 
-  def issueUrl(key: String)(implicit config: JiraConfig) = config.url + apiUrlIssues + "/browse/" + key
+  def issueUrl(key: String)(implicit config: JiraConfig) = config.url + "/browse/" + key
 
   def get(key: String)(implicit config: JiraConfig): Future[Option[JiraIssue]] =
     WS.url(issueUrl(key))

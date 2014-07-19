@@ -6,10 +6,10 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 import io.yard.module.core.Api
-import io.yard.models._
+import io.yard.common.models._
 import io.yard.module.jira.JiraWebhookAction._
 
-object JiraController extends ModuleController with io.yard.utils.Log {
+object JiraController extends ModuleController with io.yard.common.utils.Log {
 
   lazy val logger = initLogger("yardio.modules.jira.controller")
 

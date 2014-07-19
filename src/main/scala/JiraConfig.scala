@@ -1,6 +1,10 @@
 package io.yard.module.jira
 
-import io.yard.models.ProviderConfiguration
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
+
+import io.yard.common.models.{ModuleConfiguration, Organization}
+import io.yard.module.core.Api
 
 case class JiraColors(
   created: String = "",
@@ -9,14 +13,26 @@ case class JiraColors(
   commented: String = ""
 )
 
+object JiraColors {
+  implicit val jiraColorsFormat = Json.format[JiraColors]
+}
+
 case class JiraWorklog(
   enabled: Boolean = false
 )
+
+object JiraWorklog {
+  implicit val jiraWorklogFormat = Json.format[JiraWorklog]
+}
 
 case class JiraBot(
   name: String = "JIRA",
   icon: String = ""
 )
+
+object JiraBot {
+  implicit val jiraBotFormat = Json.format[JiraBot]
+}
 
 case class JiraConfig(
   url: String,
@@ -25,10 +41,17 @@ case class JiraConfig(
   bot: JiraBot = JiraBot(),
   colors: JiraColors = JiraColors(),
   worklog: JiraWorklog = JiraWorklog()
-) extends ProviderConfiguration
+) extends ModuleConfiguration
+
+object JiraConfig {
+  implicit val jiraConfigFormat = Json.format[JiraConfig]
+
+  def from(org: Organization) = Api.connector.read[JiraConfig](JiraModule.value, Some(org))
+  def from(orgName: String) = Api.connector.read[JiraConfig](JiraModule.value, Some(Api.organizations.from(orgName)))
+}
 
 
- /*extends io.yard.utils.Config {
+ /*extends io.yard.common.utils.Config {
   object jira {
     def url = getString("yardio.jira.url")
     def authBasic = getString("yardio.jira.auth.basic")
