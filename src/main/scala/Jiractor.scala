@@ -1,6 +1,7 @@
 package io.yard.module.jira
 
 import scala.concurrent.Future
+import scala.util.Failure
 import play.api.libs.concurrent.Execution.Implicits._
 
 import akka.actor.Actor
@@ -37,23 +38,30 @@ class Jiractor extends Actor with io.yard.common.utils.Answer {
     }*/
   }
 
-  val jiraRegex = "([a-zA-Z]+-[0-9]+)".r
+  val jiraRegex = "([A-Z]+-[0-9]+)".r
+
+  def findIssueKeys(str: String): List[String] =
+    for {
+      jiraRegex(issueKey) ← (jiraRegex findAllIn str).toList
+    } yield issueKey
 
   def handleMessage(message: Message) = {
     implicit val config = JiraConfig("")
-    Future.sequence((for {
-      jiraRegex(issueKey) ← jiraRegex findAllIn message.text
-    } yield issueKey).toList map {
-      key ⇒ JiraServices.get(key).map { (key, _) }
-    }).map { issues ⇒
-      val text = issues.map {
-          case (key, None) ⇒ s"${key}: No issue found, sorry."
-          case (key, Some(issue)) ⇒ {
-            val link = JiraServices.issueUrl(issue.key)
-            s"<${link}|${issue.key}> [${issue.fields.priority.name}]: ${issue.fields.summary} (by ${issue.fields.creator.displayName})"
+
+    val futureMessages =
+      findIssueKeys(message.text) map { key ⇒
+        JiraServices
+          .get(key)
+          .map(_.fold(s"Couldn't find an issue for key $key.")(_.asMessage))
+          .recover {
+            case ex ⇒
+              println(s"Error while reading from JIRA: ${ex}") // TODO: use log
+              s"Coudn't retrieve issue for key $key."
           }
-        }.mkString("\n")
-      Api.send(message.copy(text = text))
-    }
+      }
+
+    Future.sequence(futureMessages)
+      .map(_ mkString "\n")
+      .map(compiledMessage ⇒ Api.send(message.copy(text = compiledMessage)))
   }
 }

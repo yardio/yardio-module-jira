@@ -14,15 +14,15 @@ object JiraServices {
   lazy val apiUrl = "/rest/api/2"
   lazy val apiUrlIssues = apiUrl + "/issue"
 
-  /*lazy val api = WS.url(jira.url + "/rest/api/2") //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))
-  lazy val apiIssues = WS.url(apiUrlIssues) //.withHeaders("Authorization" -> ("Basic " + jiraAuthBasic))*/
-
   def issueUrl(key: String)(implicit config: JiraConfig) = config.url + "/browse/" + key
 
   def get(key: String)(implicit config: JiraConfig): Future[Option[JiraIssue]] =
-    WS.url(issueUrl(key))
-      .withHeaders("Authorization" -> ("Basic " + config.authBasic))
-      .get.map(_.json.asOpt[JiraIssue])
+    config.authBasic map { token ⇒
+      WS.url(s"${config.url}/rest/api/2/issue/$key")
+        .withHeaders("Authorization" → s"Basic $token")
+        .get
+        .map { _.json.asOpt[JiraIssue] }
+    } getOrElse Future.failed(new IllegalStateException("No auth token for reading from JIRA."))
 
   /*def create(summary: String, description: String, project: String, issueType: String): Future[JsObject] = {
     val projectLabel = if (Numbers.isAllDigits(project)) { "id" } else { "key" }

@@ -72,7 +72,15 @@ case class JiraIssue(
   id: String,
   self: String,
   key: String,
-  fields: JiraIssueFields)
+  fields: JiraIssueFields
+) {
+
+  def asMessage(implicit config: JiraConfig) = {
+    val link = JiraServices.issueUrl(key)
+    s"<${link}|${key}>: ${fields.summary} (by ${fields.creator.displayName})"
+  }
+
+}
 
 object JiraIssue {
   implicit val jiraIssueFormat = Json.format[JiraIssue]
@@ -137,4 +145,3 @@ case class JiraWebhookEvent(
 object JiraWebhookEvent {
   implicit val jiraWebhookEventFormat = Json.format[JiraWebhookEvent]
 }
-
